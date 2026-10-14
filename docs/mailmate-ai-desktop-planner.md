@@ -228,15 +228,15 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [ ] Keep calendar permission separate from task permission.
 
 ### Milestone 2 — SQLite task store
-- [~] Task-store implementation and tests were drafted; verify actual files and tests.
-- [ ] Create/verify `app/storage/task_store.py`.
-- [ ] Create/verify `tests/test_task_store.py`.
-- [ ] Enforce idempotency by source email ID or stable key.
-- [ ] Test duplicate/repeated processing and validation.
-- [ ] Test lookup, listing, status changes, and error cases.
-- [ ] Persist deadline metadata and confirmation state as required.
-- [ ] Store Calendar event ID without implementing Calendar creation yet.
-- [ ] Use temporary databases in tests.
+- [x] Task-store implementation and tests verified and passing.
+- [x] Create/verify `app/storage/task_store.py`. TaskStore class with full CRUD, idempotency, status/confirmation/calendar updates.
+- [x] Create/verify `tests/test_task_store.py`. 26 tests, all in-memory.
+- [x] Enforce idempotency by source email ID or stable key. UNIQUE constraint; DuplicateEmailError raised on reprocessing.
+- [x] Test duplicate/repeated processing and validation.
+- [x] Test lookup, listing, status changes, and error cases.
+- [x] Persist deadline metadata and confirmation state as required. deadline, deadline_state, confirmation_status all stored.
+- [x] Store Calendar event ID without implementing Calendar creation yet. set_calendar_event_id() method available.
+- [x] Use temporary databases in tests. All tests use :memory:.
 
 ### Milestone 3 — Laya-to-policy integration
 - [ ] Define typed outputs for actionability, priority, task extraction, and deadline state.
