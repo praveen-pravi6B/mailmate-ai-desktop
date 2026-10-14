@@ -239,11 +239,11 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Use temporary databases in tests. All tests use :memory:.
 
 ### Milestone 3 — Laya-to-policy integration
-- [ ] Define typed outputs for actionability, priority, task extraction, and deadline state.
-- [ ] Normalize and validate Laya output; unknown labels become REVIEW.
-- [ ] Connect classification to the policy module.
-- [ ] Use mocked Laya results in unit tests to avoid loading the model for every test.
-- [ ] Prove that model predictions cannot directly invoke storage or integrations.
+- [x] Define typed outputs for actionability, priority, task extraction, and deadline state. `ClassificationResult` frozen dataclass in `app/laya_engine/classifier.py`.
+- [x] Normalize and validate Laya output; unknown labels become REVIEW. Handled in `classify_email()`; malformed/missing responses also normalised.
+- [x] Connect classification to the policy module. `app/services/classification_pipeline.py` → `apply_policy(result) -> PolicyDecision`.
+- [x] Use mocked Laya results in unit tests to avoid loading the model for every test. `unittest.mock.MagicMock` used throughout; 38 new tests (23 classifier, 15 pipeline).
+- [x] Prove that model predictions cannot directly invoke storage or integrations. `apply_policy()` returns a `PolicyDecision` only; namespace checks confirm no forbidden imports. 78 total tests passing.
 
 ### Milestone 4 — Email normalization and task extraction
 - [ ] Define normalized email fields: provider, message ID, thread ID if available, sender, subject, body, received timestamp, relevant headers.
