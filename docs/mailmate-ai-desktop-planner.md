@@ -246,12 +246,12 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Prove that model predictions cannot directly invoke storage or integrations. `apply_policy()` returns a `PolicyDecision` only; namespace checks confirm no forbidden imports. 78 total tests passing.
 
 ### Milestone 4 — Email normalization and task extraction
-- [ ] Define normalized email fields: provider, message ID, thread ID if available, sender, subject, body, received timestamp, relevant headers.
-- [ ] Define task result fields: title, description, priority, deadline, deadline status, supporting evidence.
-- [ ] Never invent a task or deadline.
-- [ ] Distinguish explicit and inferred dates.
-- [ ] Test missing, relative, ambiguous, and conflicting dates.
-- [ ] Keep task extraction separate from summary generation.
+- [x] Define normalized email fields. `app/models/email.py` — `NormalizedEmail` frozen dataclass: provider, message_id, thread_id, sender, subject, body, received_at, headers.
+- [x] Define task result fields. `app/models/task.py` — `TaskCandidate` frozen dataclass: email_id, title, description, priority, deadline, deadline_state, evidence.
+- [x] Never invent a task or deadline. Relative dates produce deadline=None; only explicit calendar dates populate deadline.
+- [x] Distinguish explicit and inferred dates. ISO/written/slash dates → CLEAR; relative terms (tomorrow, next Friday, ASAP, within N days) → AMBIGUOUS; day-of-week names always AMBIGUOUS; nothing → NONE.
+- [x] Test missing, relative, ambiguous, and conflicting dates. 56 new tests covering all deadline states, title extraction, description truncation, immutability, and no-storage-import checks.
+- [x] Keep task extraction separate from summary generation. `extract_task()` is structural only; no AI summary generated. 134 total tests passing.
 
 ### Milestone 5 — Orchestration and idempotency
 - [ ] Coordinate normalized email, inference, policy, and SQLite storage.
