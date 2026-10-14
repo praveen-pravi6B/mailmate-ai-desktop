@@ -1,0 +1,111 @@
+{
+  "schema_version": "2.0",
+  "dataset_name": "MailMate Simple Demo",
+  "label_status": "demo_examples",
+  "emails": [
+    {
+      "id": "demo_critical_outage",
+      "subject": "Website is down",
+      "body": "The website is down. Customers cannot book parking. Fix it now.",
+      "category": "incident",
+      "expected_actionability": "YES",
+      "expected_priority": "P0",
+      "deadline_type": "immediate",
+      "expected_action": "create_task_and_notify",
+      "rationale": "Critical production outage.",
+      "split": "demo",
+      "reconstructed": true
+    },
+    {
+      "id": "demo_security_issue",
+      "subject": "Security alert",
+      "body": "Someone is using a stolen account. Block access now.",
+      "category": "security",
+      "expected_actionability": "YES",
+      "expected_priority": "P0",
+      "deadline_type": "immediate",
+      "expected_action": "create_task_and_notify",
+      "rationale": "Immediate security risk.",
+      "split": "demo",
+      "reconstructed": true
+    },
+    {
+      "id": "demo_payment",
+      "subject": "Payment due Friday",
+      "body": "Please pay the invoice by Friday.",
+      "category": "payment",
+      "expected_actionability": "YES",
+      "expected_priority": "P1",
+      "deadline_type": "clear",
+      "expected_action": "create_task_and_notify",
+      "rationale": "Clear payment task with a deadline.",
+      "split": "demo",
+      "reconstructed": true
+    },
+    {
+      "id": "demo_bug",
+      "subject": "Fix login bug",
+      "body": "Please fix the login bug by tomorrow.",
+      "category": "bug",
+      "expected_actionability": "YES",
+      "expected_priority": "P1",
+      "deadline_type": "clear",
+      "expected_action": "create_task_and_notify",
+      "rationale": "Important task with a deadline.",
+      "split": "demo",
+      "reconstructed": true
+    },
+    {
+      "id": "demo_review",
+      "subject": "Review document",
+      "body": "Please review this document when you have time.",
+      "category": "work",
+      "expected_actionability": "YES",
+      "expected_priority": "P2",
+      "deadline_type": "none",
+      "expected_action": "ask_confirmation",
+      "rationale": "Routine task without a deadline.",
+      "split": "demo",
+      "reconstructed": true
+    },
+    {
+      "id": "demo_meeting_followup",
+      "subject": "Send meeting notes",
+      "body": "Please send the meeting notes.",
+      "category": "work",
+      "expected_actionability": "YES",
+      "expected_priority": "P2",
+      "deadline_type": "none",
+      "expected_action": "ask_confirmation",
+      "rationale": "Simple task without a deadline.",
+      "split": "demo",
+      "reconstructed": true
+    },
+    {
+      "id": "demo_newsletter",
+      "subject": "Weekly newsletter",
+      "body": "Here are this week's company news and updates.",
+      "category": "newsletter",
+      "expected_actionability": "NO",
+      "expected_priority": "OTHER",
+      "deadline_type": "none",
+      "expected_action": "summarize_only",
+      "rationale": "Informational email with no requested action.",
+      "split": "demo",
+      "reconstructed": true
+    },
+    {
+      "id": "demo_meeting_update",
+      "subject": "Meeting moved",
+      "body": "The team meeting has moved to 3 PM. No reply is needed.",
+      "category": "announcement",
+      "expected_actionability": "NO",
+      "expected_priority": "OTHER",
+      "deadline_type": "none",
+      "expected_action": "summarize_only",
+      "rationale": "Information only; no action is required.",
+      "split": "demo",
+      "reconstructed": true
+    }
+  ]
+}

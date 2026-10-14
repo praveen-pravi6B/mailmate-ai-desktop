@@ -1,0 +1,343 @@
+{
+  "model": "convaiinnovations/laya",
+  "subfolder": "typed-decisions",
+  "dataset_name": "MailMate Simple Demo",
+  "dataset_label_status": "demo_examples",
+  "metrics": {
+    "overall": {
+      "correct": 6,
+      "total": 8,
+      "accuracy": 0.75
+    },
+    "actionability": {
+      "correct": 7,
+      "total": 8,
+      "accuracy": 0.875
+    },
+    "priority": {
+      "correct": 5,
+      "total": 6,
+      "accuracy": 0.8333333333333334
+    }
+  },
+  "category_accuracy": {
+    "announcement": {
+      "correct": 0,
+      "total": 1,
+      "accuracy": 0.0
+    },
+    "bug": {
+      "correct": 1,
+      "total": 1,
+      "accuracy": 1.0
+    },
+    "incident": {
+      "correct": 1,
+      "total": 1,
+      "accuracy": 1.0
+    },
+    "newsletter": {
+      "correct": 1,
+      "total": 1,
+      "accuracy": 1.0
+    },
+    "payment": {
+      "correct": 1,
+      "total": 1,
+      "accuracy": 1.0
+    },
+    "security": {
+      "correct": 1,
+      "total": 1,
+      "accuracy": 1.0
+    },
+    "work": {
+      "correct": 1,
+      "total": 2,
+      "accuracy": 0.5
+    }
+  },
+  "confusion_counts": [
+    {
+      "expected": "OTHER",
+      "predicted": "OTHER",
+      "count": 1
+    },
+    {
+      "expected": "OTHER",
+      "predicted": "P2",
+      "count": 1
+    },
+    {
+      "expected": "P0",
+      "predicted": "P0",
+      "count": 2
+    },
+    {
+      "expected": "P1",
+      "predicted": "P1",
+      "count": 2
+    },
+    {
+      "expected": "P2",
+      "predicted": "P1",
+      "count": 1
+    },
+    {
+      "expected": "P2",
+      "predicted": "P2",
+      "count": 1
+    }
+  ],
+  "review_cases": [
+    {
+      "id": "demo_meeting_followup",
+      "subject": "Send meeting notes",
+      "category": "work",
+      "expected_actionability": "YES",
+      "predicted_actionability": "YES",
+      "expected_priority": "P2",
+      "predicted_priority": "P1",
+      "expected_final_prediction": "P2",
+      "final_prediction": "P1",
+      "actionability_match": true,
+      "priority_match": false,
+      "overall_match": false,
+      "action_probabilities": {
+        "YES": 0.6465,
+        "NO": 0.3535
+      },
+      "priority_probabilities": {
+        "P0": 0.1489,
+        "P1": 0.4401,
+        "P2": 0.411
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    },
+    {
+      "id": "demo_meeting_update",
+      "subject": "Meeting moved",
+      "category": "announcement",
+      "expected_actionability": "NO",
+      "predicted_actionability": "YES",
+      "expected_priority": "OTHER",
+      "predicted_priority": "P2",
+      "expected_final_prediction": "OTHER",
+      "final_prediction": "P2",
+      "actionability_match": false,
+      "priority_match": null,
+      "overall_match": false,
+      "action_probabilities": {
+        "YES": 0.5133,
+        "NO": 0.4867
+      },
+      "priority_probabilities": {
+        "P0": 0.179,
+        "P1": 0.314,
+        "P2": 0.5069
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    }
+  ],
+  "results": [
+    {
+      "id": "demo_critical_outage",
+      "subject": "Website is down",
+      "category": "incident",
+      "expected_actionability": "YES",
+      "predicted_actionability": "YES",
+      "expected_priority": "P0",
+      "predicted_priority": "P0",
+      "expected_final_prediction": "P0",
+      "final_prediction": "P0",
+      "actionability_match": true,
+      "priority_match": true,
+      "overall_match": true,
+      "action_probabilities": {
+        "YES": 0.7233,
+        "NO": 0.2767
+      },
+      "priority_probabilities": {
+        "P0": 0.5458,
+        "P1": 0.3238,
+        "P2": 0.1304
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    },
+    {
+      "id": "demo_security_issue",
+      "subject": "Security alert",
+      "category": "security",
+      "expected_actionability": "YES",
+      "predicted_actionability": "YES",
+      "expected_priority": "P0",
+      "predicted_priority": "P0",
+      "expected_final_prediction": "P0",
+      "final_prediction": "P0",
+      "actionability_match": true,
+      "priority_match": true,
+      "overall_match": true,
+      "action_probabilities": {
+        "YES": 0.7262,
+        "NO": 0.2738
+      },
+      "priority_probabilities": {
+        "P0": 0.6278,
+        "P1": 0.2523,
+        "P2": 0.1199
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    },
+    {
+      "id": "demo_payment",
+      "subject": "Payment due Friday",
+      "category": "payment",
+      "expected_actionability": "YES",
+      "predicted_actionability": "YES",
+      "expected_priority": "P1",
+      "predicted_priority": "P1",
+      "expected_final_prediction": "P1",
+      "final_prediction": "P1",
+      "actionability_match": true,
+      "priority_match": true,
+      "overall_match": true,
+      "action_probabilities": {
+        "YES": 0.7996,
+        "NO": 0.2004
+      },
+      "priority_probabilities": {
+        "P0": 0.1919,
+        "P1": 0.4821,
+        "P2": 0.3261
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    },
+    {
+      "id": "demo_bug",
+      "subject": "Fix login bug",
+      "category": "bug",
+      "expected_actionability": "YES",
+      "predicted_actionability": "YES",
+      "expected_priority": "P1",
+      "predicted_priority": "P1",
+      "expected_final_prediction": "P1",
+      "final_prediction": "P1",
+      "actionability_match": true,
+      "priority_match": true,
+      "overall_match": true,
+      "action_probabilities": {
+        "YES": 0.8113,
+        "NO": 0.1887
+      },
+      "priority_probabilities": {
+        "P0": 0.285,
+        "P1": 0.4773,
+        "P2": 0.2377
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    },
+    {
+      "id": "demo_review",
+      "subject": "Review document",
+      "category": "work",
+      "expected_actionability": "YES",
+      "predicted_actionability": "YES",
+      "expected_priority": "P2",
+      "predicted_priority": "P2",
+      "expected_final_prediction": "P2",
+      "final_prediction": "P2",
+      "actionability_match": true,
+      "priority_match": true,
+      "overall_match": true,
+      "action_probabilities": {
+        "YES": 0.6133,
+        "NO": 0.3867
+      },
+      "priority_probabilities": {
+        "P0": 0.1786,
+        "P1": 0.3515,
+        "P2": 0.4699
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    },
+    {
+      "id": "demo_meeting_followup",
+      "subject": "Send meeting notes",
+      "category": "work",
+      "expected_actionability": "YES",
+      "predicted_actionability": "YES",
+      "expected_priority": "P2",
+      "predicted_priority": "P1",
+      "expected_final_prediction": "P2",
+      "final_prediction": "P1",
+      "actionability_match": true,
+      "priority_match": false,
+      "overall_match": false,
+      "action_probabilities": {
+        "YES": 0.6465,
+        "NO": 0.3535
+      },
+      "priority_probabilities": {
+        "P0": 0.1489,
+        "P1": 0.4401,
+        "P2": 0.411
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    },
+    {
+      "id": "demo_newsletter",
+      "subject": "Weekly newsletter",
+      "category": "newsletter",
+      "expected_actionability": "NO",
+      "predicted_actionability": "NO",
+      "expected_priority": "OTHER",
+      "predicted_priority": "OTHER",
+      "expected_final_prediction": "OTHER",
+      "final_prediction": "OTHER",
+      "actionability_match": true,
+      "priority_match": null,
+      "overall_match": true,
+      "action_probabilities": {
+        "YES": 0.3152,
+        "NO": 0.6848
+      },
+      "priority_probabilities": {},
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    },
+    {
+      "id": "demo_meeting_update",
+      "subject": "Meeting moved",
+      "category": "announcement",
+      "expected_actionability": "NO",
+      "predicted_actionability": "YES",
+      "expected_priority": "OTHER",
+      "predicted_priority": "P2",
+      "expected_final_prediction": "OTHER",
+      "final_prediction": "P2",
+      "actionability_match": false,
+      "priority_match": null,
+      "overall_match": false,
+      "action_probabilities": {
+        "YES": 0.5133,
+        "NO": 0.4867
+      },
+      "priority_probabilities": {
+        "P0": 0.179,
+        "P1": 0.314,
+        "P2": 0.5069
+      },
+      "split": "demo",
+      "label_status": "provisional_reconstructed"
+    }
+  ],
+  "safety_note": "Evaluation only. Predictions do not trigger tasks, notifications, or calendar events. Scores depend on the quality and size of the supplied dataset."
+}

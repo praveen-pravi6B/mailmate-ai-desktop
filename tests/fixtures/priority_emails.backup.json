@@ -1,0 +1,31 @@
+{
+  "schema_version": "2.0",
+  "dataset_name": "MailMate Laya Email Evaluation",
+  "description": "Human-reviewed email dataset for evaluating actionability, priority, and deadline extraction.",
+  "label_status": "pending_review",
+  "label_guide": {
+    "expected_actionability": {
+      "YES": "The email requires a concrete action from the recipient.",
+      "NO": "The email does not require a meaningful action.",
+      "REVIEW": "The email is ambiguous and requires human review."
+    },
+    "expected_priority": {
+      "P0": "A confirmed critical incident or immediate serious risk requiring urgent intervention.",
+      "P1": "Important actionable work with a meaningful deadline or business impact, but no established critical incident.",
+      "P2": "Routine actionable work that can reasonably wait.",
+      "OTHER": "No actionable task is required.",
+      "REVIEW": "There is insufficient information to assign a reliable priority."
+    },
+    "deadline_type": [
+      "explicit",
+      "inferred",
+      "ambiguous",
+      "none"
+    ],
+    "split": [
+      "development",
+      "test"
+    ]
+  },
+  "emails": []
+}
