@@ -254,13 +254,13 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Keep task extraction separate from summary generation. `extract_task()` is structural only; no AI summary generated. 134 total tests passing.
 
 ### Milestone 5 — Orchestration and idempotency
-- [ ] Coordinate normalized email, inference, policy, and SQLite storage.
-- [ ] Make repeated processing safe.
-- [ ] Persist processing state or idempotency key.
-- [ ] Notify only after successful commit.
-- [ ] Test model/database failures, duplicate messages, retries, and partial failures.
-- [ ] Use structured logs without secrets or unnecessary email content.
-- [ ] Default to dry-run until explicitly enabled.
+- [x] Coordinate normalized email, inference, policy, and SQLite storage. `app/services/orchestrator.py` — `process_email()` wires all layers.
+- [x] Make repeated processing safe. `email_has_task()` check before classify; `DuplicateEmailError` race handled as SKIPPED.
+- [x] Persist processing state or idempotency key. source_email_id is the idempotency key; task written only after policy permits.
+- [x] Notify only after successful commit. `notify=True` set only on TASK_CREATED/AWAITING_CONFIRMATION after `store.create_task()` returns; always False on error or dry-run.
+- [x] Test model/database failures, duplicate messages, retries, and partial failures. 33 orchestrator tests; store check failure, classification crash, DB write failure, duplicate race all return ERROR/SKIPPED with notify=False.
+- [x] Use structured logs without secrets or unnecessary email content. `logging` with email_id only; no subject, body, or sender in log messages.
+- [x] Default to dry-run until explicitly enabled. `process_email(..., dry_run=True)` default; live mode requires explicit `dry_run=False`. 167 total tests passing.
 
 ### Milestone 6 — Telegram
 - [ ] Define notification templates.

@@ -148,6 +148,17 @@ def _detect_deadline(body: str) -> tuple[DeadlineState, Optional[str], str]:
     return DeadlineState.AMBIGUOUS, None, "Unable to determine deadline clearly."
 
 
+def detect_deadline_state(body: str) -> str:
+    """Return the DeadlineState value string for a given email body.
+
+    Public wrapper around ``_detect_deadline`` for use by the orchestrator
+    so it can pass the correct deadline_state to the classifier before
+    building the full TaskCandidate.
+    """
+    state, _, _ = _detect_deadline(body)
+    return state.value
+
+
 # ---------------------------------------------------------------------------
 # Title / description helpers
 # ---------------------------------------------------------------------------

@@ -168,10 +168,11 @@ def classify_email(
     except ValueError:
         deadline_state = DeadlineState.AMBIGUOUS.value
 
-    state = {
-        "subject": email.get("subject", ""),
-        "body": email.get("body", ""),
-    }
+    # Accept either a plain dict or a NormalizedEmail dataclass.
+    if isinstance(email, dict):
+        state = {"subject": email.get("subject", ""), "body": email.get("body", "")}
+    else:
+        state = {"subject": getattr(email, "subject", ""), "body": getattr(email, "body", "")}
 
     normalized = False
 
