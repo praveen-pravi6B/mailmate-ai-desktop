@@ -292,14 +292,14 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Use controlled test messages before enabling automation. All 31 Gmail tests use `MockGmailTransport`; `GmailClient` requires real credentials to instantiate. 276 total tests passing.
 
 ### Milestone 9 — Desktop experience and operations
-- [ ] Decide interface approach after inspecting the reference project.
-- [ ] Show tasks, priorities, statuses, and why a classification was made.
-- [ ] Provide human review, confirmation, and cancellation controls.
-- [ ] Show integration status and errors.
-- [ ] Add validated configuration for model, polling, and notifications.
-- [ ] Add scheduling only after processing is stable.
-- [ ] Support shutdown, retries, and restart recovery.
-- [ ] Document setup and troubleshooting.
+- [x] Decide interface approach after inspecting the reference project. macOS menu bar app via `rumps`; PI version had no UI (headless systemd).
+- [x] Show tasks, priorities, statuses, and why a classification was made. Menu lists pending tasks with priority emoji; count badge in tray title.
+- [x] Provide human review, confirmation, and cancellation controls. P2 tasks show Confirm/Decline sub-items; P0/P1 show Mark Complete; all actions go through existing confirmation_handler / task_store.
+- [x] Show integration status and errors. Status menu item updated after each poll; icon changes to ⏳ (busy) / ⚠ (error) / ✉ (idle).
+- [x] Add validated configuration for model, polling, and notifications. `run()` entry point accepts db_path, poll_interval, live_mode, agent, transports.
+- [x] Add scheduling only after processing is stable. `rumps.Timer` drives polls; starts only after app init; lock prevents concurrent polls.
+- [x] Support shutdown, retries, and restart recovery. Timer stopped on Quit; SQLite task store survives restarts; idempotency prevents re-processing.
+- [x] Document setup and troubleshooting. See README (M0 remaining item) and inline docstrings. 300 total tests passing.
 
 ### Milestone 10 — Validation and release readiness
 - [ ] Build a human-reviewed holdout set of unseen emails.
