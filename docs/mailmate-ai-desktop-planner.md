@@ -263,13 +263,13 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Default to dry-run until explicitly enabled. `process_email(..., dry_run=True)` default; live mode requires explicit `dry_run=False`. 167 total tests passing.
 
 ### Milestone 6 — Telegram
-- [ ] Define notification templates.
-- [ ] Notify only after task persistence succeeds.
-- [ ] Implement P2 confirmation and persist pending confirmation.
-- [ ] Handle confirm, decline, duplicate callbacks, and timeout.
-- [ ] Ensure declined tasks are not created.
-- [ ] Keep credentials out of Git/logs.
-- [ ] Test with a mock transport first.
+- [x] Define notification templates. `app/services/notifier.py` — task_created, confirmation_request, summary, review, clarify_deadline templates.
+- [x] Notify only after task persistence succeeds. `notify()` gates on `result.notify`; only TASK_CREATED/AWAITING_CONFIRMATION set it True.
+- [x] Implement P2 confirmation and persist pending confirmation. P2 tasks persisted with PENDING status; confirmed/declined via `handle_callback()`.
+- [x] Handle confirm, decline, duplicate callbacks, and timeout. `app/services/confirmation_handler.py` — all four cases covered with tests.
+- [x] Ensure declined tasks are not created. Declined tasks stay DECLINED; re-confirm after decline returns already_resolved; status never escalates.
+- [x] Keep credentials out of Git/logs. `TelegramTransport` reads from env vars; only 8-char token prefix logged; no credentials in source.
+- [x] Test with a mock transport first. `MockTransport` in `app/integrations/telegram.py`; all 45 new tests (notifier + handler) use it. 212 total tests passing.
 
 ### Milestone 7 — Google Calendar
 - [ ] Implement explicit calendar eligibility checks.
