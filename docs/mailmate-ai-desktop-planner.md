@@ -202,7 +202,7 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Inspect current repository tree and Git status. Verified: matches planner snapshot exactly. `app/storage/` and `tests/test_task_store.py` are absent. No README or `.gitignore`.
 - [x] Verify the active evaluator prompts and rerun evaluation. Last recorded run: overall 6/8 (75%), actionability 7/8 (87.5%), priority 5/6 (83.3%). See "Evaluation history" section for details.
 - [x] Resolve absent deadline vs ambiguous deadline policy. `DeadlineState` enum added; `decide()` updated; 14 tests pass.
-- [ ] Add/update README with setup, architecture, commands, and safety boundaries.
+- [x] Add/update README with setup, architecture, commands, and safety boundaries. README.md added.
 - [ ] Ensure virtualenv, local databases, tokens, and secrets are gitignored.
 
 ### Milestone 1 — Reliable policy
