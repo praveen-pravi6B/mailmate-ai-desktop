@@ -147,11 +147,17 @@ def process_email(
     deadline_state = detect_deadline_state(email.body)
 
     # ------------------------------------------------------------------
-    # 4. Classify with Laya
+    # 4. Classify with Laya (uses summary if available, else raw email)
+    #    Summary is cleaner — less noise, no boilerplate or signatures.
     # ------------------------------------------------------------------
+    laya_input = (
+        {"subject": email.subject, "body": summary}
+        if summary
+        else email
+    )
     try:
         classification: ClassificationResult = classify_email(
-            agent, email, deadline_state=deadline_state
+            agent, laya_input, deadline_state=deadline_state
         )
     except Exception as exc:
         log.error("orchestrator: classification failed email_id=%s err=%s",
