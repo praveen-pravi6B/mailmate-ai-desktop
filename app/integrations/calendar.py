@@ -127,7 +127,11 @@ class GoogleCalendarTransport(CalendarTransport):
     storage, orchestration, and notification tests pass end-to-end.
     """
 
-    _SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
+    # Shared with gmail.py GMAIL_SCOPES — same token.json covers both.
+    _SCOPES = [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/calendar.events",
+    ]
     _DEFAULT_CALENDAR_ID = "primary"
 
     def __init__(

@@ -35,8 +35,11 @@ from typing import Optional
 
 log = logging.getLogger(__name__)
 
-# Minimum scope needed — read-only.
-GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+# Scopes: Gmail read-only + Calendar event creation.
+GMAIL_SCOPES = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/calendar.events",
+]
 
 # Default number of messages fetched per run.
 DEFAULT_MAX_RESULTS = 10

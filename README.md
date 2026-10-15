@@ -86,24 +86,21 @@ TELEGRAM_CHAT_ID=your_chat_id_here
 GOOGLE_CALENDAR_ID=primary
 ```
 
-### 4. Obtain Gmail credentials
+### 4. Obtain Google credentials (Gmail + Calendar)
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com).
-2. Create a project → enable the **Gmail API**.
-3. Create OAuth 2.0 credentials (Desktop app type).
-4. Download `credentials.json` and place it in the project root.
-5. Run the authentication flow once:
+2. Create a project → enable both **Gmail API** and **Google Calendar API**.
+3. Configure OAuth consent screen → External → add your Gmail as a test user.
+4. Create OAuth 2.0 Client ID (Desktop app type) → Download JSON → save as `credentials.json` in the project root.
+5. Run the one-time auth setup:
 
 ```bash
-python -c "
-from app.integrations.gmail import load_credentials
-load_credentials()
-print('token.json saved')
-"
+python auth_setup.py
 ```
 
-This opens a browser window for OAuth consent. `token.json` is created
-and auto-refreshed on subsequent runs.
+This opens a browser for OAuth consent covering both Gmail (read-only)
+and Calendar (event creation). `token.json` is saved and auto-refreshed
+on subsequent runs.
 
 ### 5. Run the tests
 
