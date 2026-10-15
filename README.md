@@ -11,12 +11,20 @@ app and Telegram — without sending data to any cloud backend.
 ```
 Gmail (read-only)
   → Normalize email
-  → Laya typed-decision engine  ← actionability + priority
+  → HuggingFace Summarizer      ← human-readable summary of each email
+  → Laya typed-decision engine  ← actionability + priority classification
   → Application-side policy     ← what is permitted
   → SQLite task store           ← persist if approved
-  → Telegram notification       ← notify / ask for confirmation
+  → Telegram notification       ← summary + notify / ask for confirmation
   → Google Calendar             ← separate explicit step, never automatic
 ```
+
+**Two models, two jobs:**
+
+| Model | Job | Runs on |
+|---|---|---|
+| `openai/gpt-oss-120b:fastest` | Summarize each email into 1-2 sentences | HuggingFace Inference API |
+| `convaiinnovations/laya` | Classify actionability + priority | Local CPU |
 
 The model classifies; the policy decides; you confirm anything routine.
 No model output can bypass that chain.
@@ -74,6 +82,10 @@ pip install laya \
 Create a `.env` file (never commit this):
 
 ```dotenv
+# HuggingFace (email summarization)
+HF_TOKEN=your_hf_token_here
+HF_SUMMARY_MODEL=openai/gpt-oss-120b:fastest
+
 # Google OAuth
 GOOGLE_TOKEN_PATH=token.json
 GOOGLE_CREDENTIALS_PATH=credentials.json
