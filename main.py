@@ -104,29 +104,41 @@ def handle_command(text: str, store: TaskStore):
         tg_send(WELCOME)
 
     elif cmd == "/tasks":
-        tasks = store.list_tasks(status=TaskStatus.PENDING)
-        if not tasks:
-            tg_send("✅ No pending tasks right now.")
+        all_tasks = store.list_tasks()
+        # Show all active tasks — exclude declined and cancelled
+        active = [
+            t for t in all_tasks
+            if t.status.value not in ("DECLINED", "CANCELLED")
+        ]
+        if not active:
+            tg_send("✅ No active tasks right now.")
             return
-        msg = f"📋 *Pending Tasks ({len(tasks)})*\n\n"
-        for t in tasks:
+        msg = f"📋 *Active Tasks ({len(active)})*\n\n"
+        for t in active:
             e = EMOJI.get(t.priority, "⚪")
             dl = f" | 📅 {t.deadline}" if t.deadline else ""
-            conf = (" | ⏳ _awaiting confirmation_"
-                    if t.confirmation_status.value == "PENDING" else "")
-            msg += f"{e} *{t.title[:55]}*{dl}{conf}\n\n"
+            if t.confirmation_status.value == "PENDING":
+                badge = " | ⏳ _awaiting confirmation_"
+            elif t.confirmation_status.value == "NOT_REQUIRED":
+                badge = " | ✅ _auto-created_"
+            else:
+                badge = " | ✔️ _confirmed_"
+            msg += f"{e} *{t.title[:55]}*{dl}{badge}\n\n"
         tg_send(msg)
 
     elif cmd == "/status":
         tasks = store.list_tasks()
-        pending   = sum(1 for t in tasks if t.status.value == "PENDING")
-        confirmed = sum(1 for t in tasks if t.status.value == "CONFIRMED")
-        with_cal  = sum(1 for t in tasks if t.calendar_event_id)
+        active = [t for t in tasks if t.status.value not in ("DECLINED", "CANCELLED")]
+        awaiting  = sum(1 for t in active if t.confirmation_status.value == "PENDING")
+        confirmed = sum(1 for t in active if t.confirmation_status.value == "CONFIRMED")
+        auto      = sum(1 for t in active if t.confirmation_status.value == "NOT_REQUIRED")
+        with_cal  = sum(1 for t in active if t.calendar_event_id)
         tg_send(
             f"📊 *MailMate AI Status*\n\n"
-            f"Tasks in DB: {len(tasks)}\n"
-            f"⏳ Pending: {pending}\n"
-            f"✔️ Confirmed: {confirmed}\n"
+            f"Total active tasks: {len(active)}\n"
+            f"✅ Auto-created: {auto}\n"
+            f"✔️ Confirmed by you: {confirmed}\n"
+            f"⏳ Awaiting confirmation: {awaiting}\n"
             f"🗓️ With calendar event: {with_cal}\n\n"
             f"_Pipeline: Gmail → Laya → Policy → SQLite → Telegram → Calendar_"
         )

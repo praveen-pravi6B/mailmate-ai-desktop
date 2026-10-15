@@ -69,19 +69,19 @@ def send_poll_summary(
     if not results:
         return False
 
-    important, actions, updates, reviews = [], [], [], []
+    important, updates, reviews = [], [], []
 
     for r in results:
         subj = (r.candidate.title[:55] + "…"
                 if r.candidate and len(r.candidate.title) > 55
                 else (r.candidate.title if r.candidate else r.email_id))
         pri  = _pri(r.candidate.priority) if r.candidate else ""
-        dl   = r.candidate.deadline or f"[{r.candidate.deadline_state}]" if r.candidate else ""
+        dl   = r.candidate.deadline if r.candidate and r.candidate.deadline else ""
 
         line = f"• *{subj}*"
         if pri:
             line += f"\n  {pri}"
-        if dl and dl != "[NONE]":
+        if dl:
             line += f"  |  📅 {dl}"
 
         if r.status == TASK_CREATED:
@@ -91,21 +91,14 @@ def send_poll_summary(
         elif r.status == NEEDS_REVIEW:
             reviews.append(line)
         else:
-            # NO_ACTION — split by actionability
-            if r.candidate and r.candidate.priority not in ("OTHER",):
-                actions.append(line + f"\n  _{r.reason}_") if r.reason else updates.append(line)
-            else:
-                updates.append(line)
+            # All NO_ACTION emails go to Updates regardless of priority
+            updates.append(line)
 
     msg = "📬 *MailMate AI — Email Summary*\n\n"
 
     if important:
         msg += "🔴 *Important / Tasks*\n"
         msg += "\n".join(important) + "\n\n"
-
-    if actions:
-        msg += "✅ *Action Required*\n"
-        msg += "\n".join(actions) + "\n\n"
 
     if updates:
         msg += "📦 *Updates*\n"
@@ -116,8 +109,18 @@ def send_poll_summary(
         msg += "\n".join(reviews) + "\n\n"
 
     total = len(results)
-    tasks = sum(1 for r in results if r.status in (TASK_CREATED, AWAITING_CONFIRMATION))
-    msg += f"_Processed {total} email(s) — {tasks} task(s) created_"
+    created  = sum(1 for r in results if r.status == TASK_CREATED)
+    awaiting = sum(1 for r in results if r.status == AWAITING_CONFIRMATION)
+
+    footer_parts = [f"Processed {total} email(s)"]
+    if created:
+        footer_parts.append(f"{created} task(s) created")
+    if awaiting:
+        footer_parts.append(f"{awaiting} awaiting confirmation")
+    if not created and not awaiting:
+        footer_parts.append("no tasks")
+
+    msg += f"_{' — '.join(footer_parts)}_"
 
     ok = transport.send_message(msg)
     log.info("notifier: poll_summary sent=%s total=%d", ok, total)
