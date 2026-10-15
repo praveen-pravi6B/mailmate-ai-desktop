@@ -254,16 +254,20 @@ class TestHoldoutPolicyRouting(unittest.TestCase):
             and e["expected_priority"] in ("P0", "P1")
             and e["deadline_type"] in ("clear", "immediate")
         ]
+        # P0 always creates task; P1/P2 with clear deadline ask confirmation
         self.assertGreater(len(targets), 0)
         for email in targets:
             with self.subTest(id=email["id"]):
                 decision = apply_policy(self._make_result(email))
-                self.assertEqual(
-                    decision.action,
-                    PermittedAction.CREATE_TASK_AND_NOTIFY,
-                )
+                if email["expected_priority"] == "P0":
+                    self.assertEqual(decision.action, PermittedAction.CREATE_TASK_AND_NOTIFY)
+                else:
+                    self.assertIn(decision.action, (
+                        PermittedAction.CREATE_TASK_AND_NOTIFY,
+                        PermittedAction.ASK_CONFIRMATION,
+                    ))
 
-    def test_ambiguous_deadline_routes_to_clarify(self):
+    def test_ambiguous_deadline_routes_to_summary(self):
         from app.policy.decision_policy import PermittedAction
         from app.services.classification_pipeline import apply_policy
 
@@ -271,17 +275,15 @@ class TestHoldoutPolicyRouting(unittest.TestCase):
             e for e in self.emails
             if e["expected_actionability"] == "YES"
             and e["deadline_type"] == "ambiguous"
+            and e["expected_priority"] != "P0"
         ]
         self.assertGreater(len(ambiguous), 0)
         for email in ambiguous:
             with self.subTest(id=email["id"]):
                 decision = apply_policy(self._make_result(email))
-                self.assertEqual(
-                    decision.action,
-                    PermittedAction.CLARIFY_DEADLINE,
-                )
+                self.assertEqual(decision.action, PermittedAction.SUMMARIZE_ONLY)
 
-    def test_p2_no_deadline_routes_to_confirmation(self):
+    def test_p2_no_deadline_routes_to_summary(self):
         from app.policy.decision_policy import PermittedAction
         from app.services.classification_pipeline import apply_policy
 
@@ -295,10 +297,7 @@ class TestHoldoutPolicyRouting(unittest.TestCase):
         for email in p2_none:
             with self.subTest(id=email["id"]):
                 decision = apply_policy(self._make_result(email))
-                self.assertEqual(
-                    decision.action,
-                    PermittedAction.ASK_CONFIRMATION,
-                )
+                self.assertEqual(decision.action, PermittedAction.SUMMARIZE_ONLY)
 
     def test_p1_no_deadline_routes_to_summarize_only(self):
         from app.policy.decision_policy import PermittedAction

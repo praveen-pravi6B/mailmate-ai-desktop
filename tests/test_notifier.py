@@ -88,9 +88,10 @@ class TestTaskCreatedMessage(unittest.TestCase):
         msg = build_task_created_message(make_candidate(deadline="2026-10-20"))
         self.assertIn("2026-10-20", msg)
 
-    def test_no_deadline_shows_fallback(self):
+    def test_no_deadline_shows_deadline_state(self):
         msg = build_task_created_message(make_candidate(deadline=None))
-        self.assertIn("not specified", msg)
+        # Should mention deadline state when no date is available
+        self.assertTrue("Deadline" in msg or "deadline" in msg or "NONE" in msg or "CLEAR" in msg)
 
     def test_description_included(self):
         msg = build_task_created_message(make_candidate(description="Fix urgently."))

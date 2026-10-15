@@ -177,7 +177,7 @@ class TestFailureRecovery(unittest.TestCase):
         # No task was written, so a retry should not be SKIPPED
         self.assertFalse(store.email_has_task(email.message_id))
 
-        agent_ok = make_agent("YES", "P1")
+        agent_ok = make_agent("YES", "P0")
         r2 = run(email, agent_ok, store)
         self.assertEqual(r2.status, TASK_CREATED)
 
@@ -191,7 +191,7 @@ class TestDeclinedConfirmation(unittest.TestCase):
     def test_declined_p2_task_stays_declined(self):
         store = make_store()
         agent = make_agent("YES", "P2")
-        email = make_email(body="Review this document when you have time.")
+        email = make_email(body="Review this document by 2026-10-25.")
         result = run(email, agent, store)
         self.assertEqual(result.status, AWAITING_CONFIRMATION)
 
@@ -204,7 +204,7 @@ class TestDeclinedConfirmation(unittest.TestCase):
     def test_declined_task_cannot_be_reconfirmed(self):
         store = make_store()
         agent = make_agent("YES", "P2")
-        email = make_email(body="Review this document.")
+        email = make_email(body="Review this document by 2026-10-25.")
         result = run(email, agent, store)
 
         handle_callback(f"{DECLINE_PREFIX}{result.task_id}", store)
@@ -218,31 +218,26 @@ class TestDeclinedConfirmation(unittest.TestCase):
         store = make_store()
         transport = MockTransport()
         agent = make_agent("YES", "P2")
-        email = make_email(body="Please review the draft proposal.")
+        email = make_email(body="Please review the draft proposal by 2026-10-25.")
         result = run(email, agent, store)
 
-        # Send the confirmation-request notification (correct)
         notify(result, transport)
         self.assertEqual(transport.message_count, 1)
 
-        # User declines
         handle_callback(f"{DECLINE_PREFIX}{result.task_id}", store)
 
-        # No further notification should be sent after a decline
         declined_result = process_email(
             make_email(message_id="email-002", body="Another email."),
             make_agent("NO"),
             store,
         )
         notify(declined_result, transport)
-        # Still only 1 notification (no extra for the decline itself)
         self.assertLessEqual(transport.message_count, 2)
 
     def test_reprocessing_declined_email_is_skipped(self):
-        """Once a P2 task exists (even DECLINED) the email is idempotent."""
         store = make_store()
         agent = make_agent("YES", "P2")
-        email = make_email(body="Review doc.")
+        email = make_email(body="Review doc by 2026-10-25.")
         result = run(email, agent, store)
         handle_callback(f"{DECLINE_PREFIX}{result.task_id}", store)
 
@@ -272,15 +267,14 @@ class TestAmbiguousDeadlineSafety(unittest.TestCase):
         self.assertEqual(result.status, NO_ACTION)
         self.assertEqual(store.list_tasks(), [])
 
-    def test_ambiguous_p0_not_auto_created(self):
+    def test_p0_ambiguous_deadline_still_creates_task(self):
         store = make_store()
         agent = make_agent("YES", "P0")
         email = make_email(body="Critical outage — fix immediately!")
         result = run(email, agent, store)
-        self.assertEqual(result.status, NO_ACTION)
-        self.assertEqual(store.list_tasks(), [])
+        self.assertEqual(result.status, TASK_CREATED)
 
-    def test_ambiguous_deadline_notify_false(self):
+    def test_p1_ambiguous_deadline_notify_false(self):
         store = make_store()
         result = run(
             make_email(body="Fix ASAP."),
@@ -297,12 +291,12 @@ class TestAmbiguousDeadlineSafety(unittest.TestCase):
         self.assertEqual(result.status, NO_ACTION)
         self.assertEqual(store.list_tasks(), [])
 
-    def test_no_deadline_p0_is_summary_only(self):
+    def test_no_deadline_p0_creates_task(self):
         store = make_store()
         agent = make_agent("YES", "P0")
         email = make_email(body="The login service is broken.")
         result = run(email, agent, store)
-        self.assertEqual(result.status, NO_ACTION)
+        self.assertEqual(result.status, TASK_CREATED)
 
 
 # ---------------------------------------------------------------------------
@@ -311,11 +305,11 @@ class TestAmbiguousDeadlineSafety(unittest.TestCase):
 
 class TestNotificationGuard(unittest.TestCase):
 
-    def test_notify_true_only_after_task_created(self):
+    def test_notify_true_after_p0_task_created(self):
         store = make_store()
         result = run(
-            make_email(body="Fix by 2026-10-25."),
-            make_agent("YES", "P1"),
+            make_email(body="Server is down."),
+            make_agent("YES", "P0"),
             store,
         )
         self.assertEqual(result.status, TASK_CREATED)
@@ -353,8 +347,8 @@ class TestNotificationGuard(unittest.TestCase):
         transport.fail_next = True
 
         result = run(
-            make_email(body="Fix by 2026-10-25."),
-            make_agent("YES", "P1"),
+            make_email(body="Server is down."),
+            make_agent("YES", "P0"),
             store,
         )
         ok = notify(result, transport)
@@ -395,7 +389,7 @@ class TestFullPipelineSmoke(unittest.TestCase):
         )
 
         for email in fetch_new_emails(gmail, store):
-            result = process_email(email, make_agent("YES", "P1"), store,
+            result = process_email(email, make_agent("YES", "P0"), store,
                                    dry_run=False)
             if result.notify:
                 notify(result, transport)
@@ -403,14 +397,14 @@ class TestFullPipelineSmoke(unittest.TestCase):
         self.assertEqual(len(store.list_tasks()), 1)
         self.assertEqual(transport.message_count, 1)
 
-    def test_p2_email_creates_pending_task_and_confirmation_request(self):
+    def test_p2_clear_deadline_creates_confirmation_request(self):
         store = make_store()
         transport = MockTransport()
         gmail = MockGmailTransport()
         gmail.add_message(
             "m-p2",
             subject="Review document",
-            body="Please review this document when you have time.",
+            body="Please review this document by 2026-10-25.",
         )
 
         for email in fetch_new_emails(gmail, store):
@@ -422,7 +416,6 @@ class TestFullPipelineSmoke(unittest.TestCase):
         tasks = store.list_tasks()
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0].confirmation_status, ConfirmationStatus.PENDING)
-        # Notification has inline confirm/decline buttons
         self.assertTrue(len(transport.last_message.buttons) > 0)
 
     def test_non_actionable_email_no_task_no_notification(self):
@@ -447,8 +440,8 @@ class TestFullPipelineSmoke(unittest.TestCase):
         """Multiple emails of different types processed in one batch."""
         store = make_store()
         gmail = MockGmailTransport()
-        gmail.add_message("p0-email", body="Production DB is down! Fix now 2026-10-20.")
-        gmail.add_message("p2-email", body="Please review this document.")
+        gmail.add_message("p0-email", body="Production DB is down!")
+        gmail.add_message("p2-email", body="Please review this document by 2026-10-25.")
         gmail.add_message("other-email", body="Weekly newsletter content.")
 
         agents = {

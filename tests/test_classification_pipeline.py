@@ -39,51 +39,54 @@ def make_result(
 
 class TestPipelineRouting(unittest.TestCase):
 
+    # P0 — always create task regardless of deadline
     def test_p0_clear_deadline_creates_task(self):
         result = make_result(priority="P0", deadline_state="CLEAR")
         decision = apply_policy(result)
         self.assertEqual(decision.action, PermittedAction.CREATE_TASK_AND_NOTIFY)
         self.assertFalse(decision.calendar_allowed)
 
-    def test_p1_clear_deadline_creates_task(self):
-        result = make_result(priority="P1", deadline_state="CLEAR")
+    def test_p0_no_deadline_creates_task(self):
+        result = make_result(priority="P0", deadline_state="NONE")
         decision = apply_policy(result)
         self.assertEqual(decision.action, PermittedAction.CREATE_TASK_AND_NOTIFY)
 
-    def test_p0_no_deadline_is_summary_only(self):
-        result = make_result(priority="P0", deadline_state="NONE")
+    def test_p0_ambiguous_deadline_creates_task(self):
+        result = make_result(priority="P0", deadline_state="AMBIGUOUS")
         decision = apply_policy(result)
-        self.assertEqual(decision.action, PermittedAction.SUMMARIZE_ONLY)
+        self.assertEqual(decision.action, PermittedAction.CREATE_TASK_AND_NOTIFY)
+
+    # P1 — ask confirmation only with CLEAR deadline
+    def test_p1_clear_deadline_asks_confirmation(self):
+        result = make_result(priority="P1", deadline_state="CLEAR")
+        decision = apply_policy(result)
+        self.assertEqual(decision.action, PermittedAction.ASK_CONFIRMATION)
 
     def test_p1_no_deadline_is_summary_only(self):
         result = make_result(priority="P1", deadline_state="NONE")
         decision = apply_policy(result)
         self.assertEqual(decision.action, PermittedAction.SUMMARIZE_ONLY)
 
-    def test_p0_ambiguous_deadline_requires_clarification(self):
-        result = make_result(priority="P0", deadline_state="AMBIGUOUS")
-        decision = apply_policy(result)
-        self.assertEqual(decision.action, PermittedAction.CLARIFY_DEADLINE)
-
-    def test_p1_ambiguous_deadline_requires_clarification(self):
+    def test_p1_ambiguous_deadline_is_summary_only(self):
         result = make_result(priority="P1", deadline_state="AMBIGUOUS")
         decision = apply_policy(result)
-        self.assertEqual(decision.action, PermittedAction.CLARIFY_DEADLINE)
+        self.assertEqual(decision.action, PermittedAction.SUMMARIZE_ONLY)
 
+    # P2 — ask confirmation only with CLEAR deadline
     def test_p2_clear_deadline_asks_confirmation(self):
         result = make_result(priority="P2", deadline_state="CLEAR")
         decision = apply_policy(result)
         self.assertEqual(decision.action, PermittedAction.ASK_CONFIRMATION)
 
-    def test_p2_no_deadline_asks_confirmation(self):
+    def test_p2_no_deadline_is_summary_only(self):
         result = make_result(priority="P2", deadline_state="NONE")
         decision = apply_policy(result)
-        self.assertEqual(decision.action, PermittedAction.ASK_CONFIRMATION)
+        self.assertEqual(decision.action, PermittedAction.SUMMARIZE_ONLY)
 
-    def test_p2_ambiguous_deadline_requires_clarification(self):
+    def test_p2_ambiguous_deadline_is_summary_only(self):
         result = make_result(priority="P2", deadline_state="AMBIGUOUS")
         decision = apply_policy(result)
-        self.assertEqual(decision.action, PermittedAction.CLARIFY_DEADLINE)
+        self.assertEqual(decision.action, PermittedAction.SUMMARIZE_ONLY)
 
     def test_non_actionable_is_summary_only(self):
         result = make_result(actionability="NO", priority="OTHER", deadline_state="NONE")

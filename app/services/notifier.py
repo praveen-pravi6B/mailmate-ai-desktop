@@ -1,18 +1,16 @@
 """Notification service for MailMate AI.
 
 Builds Telegram message text and dispatches it via a NotificationTransport.
-Never sends notifications directly — always delegates to the transport so
-tests can use MockTransport without making real HTTP calls.
+
+Message flow (per poll):
+  1. send_poll_summary()  — one batch message grouping all emails by outcome
+  2. notify()             — individual message per task created / P2 confirmation
 
 Safety rules
 ------------
-- Notifications are only sent when the caller confirms that a task was
-  successfully committed (i.e. result.notify is True).
-- P2 confirmation requests include Confirm/Decline inline buttons whose
-  callback_data embeds the task_id.
-- Credentials are never referenced here — they live in the transport.
-- No email body or sender address is included in notification text unless
-  it is part of the task title/description already extracted.
+- notify() only sends when result.notify is True (task successfully committed).
+- P2 confirmation requests include ✅ Yes / ❌ No inline buttons.
+- Credentials never referenced here — they live in the transport.
 """
 
 import logging
@@ -22,10 +20,10 @@ from app.integrations.telegram import InlineButton, NotificationTransport
 from app.models.task import TaskCandidate
 from app.services.orchestrator import (
     AWAITING_CONFIRMATION,
-    NEEDS_REVIEW,
     NO_ACTION,
     OrchestrationResult,
     TASK_CREATED,
+    NEEDS_REVIEW,
 )
 
 log = logging.getLogger(__name__)
@@ -39,137 +37,173 @@ DECLINE_PREFIX = "decline:"
 
 
 def confirmation_callback_data(task_id: str) -> tuple[str, str]:
-    """Return (confirm_data, decline_data) strings for inline buttons."""
     return f"{CONFIRM_PREFIX}{task_id}", f"{DECLINE_PREFIX}{task_id}"
 
 
 # ---------------------------------------------------------------------------
-# Priority emoji helpers
+# Priority helpers
 # ---------------------------------------------------------------------------
 
-_PRIORITY_EMOJI = {"P0": "🔴", "P1": "🟠", "P2": "🟡"}
+_PRIORITY_EMOJI = {"P0": "🔴", "P1": "🟠", "P2": "🟡", "OTHER": "⚪", "REVIEW": "⚠️"}
 
-
-def _priority_label(priority: str) -> str:
-    emoji = _PRIORITY_EMOJI.get(priority, "⚪")
-    return f"{emoji} {priority}"
+def _pri(priority: str) -> str:
+    return f"{_PRIORITY_EMOJI.get(priority, '⚪')} {priority}"
 
 
 # ---------------------------------------------------------------------------
-# Message templates
+# Batch poll summary  (PI-repo style — one message per poll run)
+# ---------------------------------------------------------------------------
+
+def send_poll_summary(
+    results: list[OrchestrationResult],
+    transport: NotificationTransport,
+) -> bool:
+    """Send one grouped summary message covering all emails in the poll.
+
+    Groups:
+      🔴 Important  — P0/P1 task created
+      ✅ Action Required — P2 awaiting confirmation
+      📦 Updates    — summarize-only / no action
+      ⚠️ Review     — needs human review
+    """
+    if not results:
+        return False
+
+    important, actions, updates, reviews = [], [], [], []
+
+    for r in results:
+        subj = (r.candidate.title[:55] + "…"
+                if r.candidate and len(r.candidate.title) > 55
+                else (r.candidate.title if r.candidate else r.email_id))
+        pri  = _pri(r.candidate.priority) if r.candidate else ""
+        dl   = r.candidate.deadline or f"[{r.candidate.deadline_state}]" if r.candidate else ""
+
+        line = f"• *{subj}*"
+        if pri:
+            line += f"\n  {pri}"
+        if dl and dl != "[NONE]":
+            line += f"  |  📅 {dl}"
+
+        if r.status == TASK_CREATED:
+            important.append(line + "\n  _Task created ✅_")
+        elif r.status == AWAITING_CONFIRMATION:
+            important.append(line + "\n  _Awaiting your confirmation ❓_")
+        elif r.status == NEEDS_REVIEW:
+            reviews.append(line)
+        else:
+            # NO_ACTION — split by actionability
+            if r.candidate and r.candidate.priority not in ("OTHER",):
+                actions.append(line + f"\n  _{r.reason}_") if r.reason else updates.append(line)
+            else:
+                updates.append(line)
+
+    msg = "📬 *MailMate AI — Email Summary*\n\n"
+
+    if important:
+        msg += "🔴 *Important / Tasks*\n"
+        msg += "\n".join(important) + "\n\n"
+
+    if actions:
+        msg += "✅ *Action Required*\n"
+        msg += "\n".join(actions) + "\n\n"
+
+    if updates:
+        msg += "📦 *Updates*\n"
+        msg += "\n".join(updates) + "\n\n"
+
+    if reviews:
+        msg += "⚠️ *Needs Review*\n"
+        msg += "\n".join(reviews) + "\n\n"
+
+    total = len(results)
+    tasks = sum(1 for r in results if r.status in (TASK_CREATED, AWAITING_CONFIRMATION))
+    msg += f"_Processed {total} email(s) — {tasks} task(s) created_"
+
+    ok = transport.send_message(msg)
+    log.info("notifier: poll_summary sent=%s total=%d", ok, total)
+    return ok
+
+
+# ---------------------------------------------------------------------------
+# Individual task messages
 # ---------------------------------------------------------------------------
 
 def build_task_created_message(candidate: TaskCandidate) -> str:
-    """Template for P0/P1 task-created notifications."""
-    deadline_line = (
-        f"📅 Deadline: {candidate.deadline}"
-        if candidate.deadline
-        else "📅 Deadline: not specified"
-    )
-    return (
-        f"✅ *Task Created* — {_priority_label(candidate.priority)}\n"
-        f"*{candidate.title}*\n"
-        f"{deadline_line}\n\n"
-        f"{candidate.description[:300]}"
-    ).strip()
+    """Detailed message for P0/P1 task created."""
+    lines = [
+        f"✅ *Task Created* — {_pri(candidate.priority)}",
+        f"",
+        f"📌 *{candidate.title}*",
+        f"",
+    ]
+    if candidate.description:
+        # Full description, split into readable lines, max 800 chars
+        desc = candidate.description[:800]
+        lines.append(desc)
+        lines.append("")
+    if candidate.deadline:
+        lines.append(f"📅 *Deadline:* {candidate.deadline}")
+    else:
+        lines.append(f"📅 *Deadline:* Not specified ({candidate.deadline_state})")
+    if candidate.evidence and candidate.evidence != "No date or time reference found.":
+        lines.append(f"🔍 *Evidence:* _{candidate.evidence}_")
+    return "\n".join(lines).strip()
 
 
 def build_confirmation_request_message(candidate: TaskCandidate) -> str:
-    """Template for P2 confirmation-request messages."""
-    return (
-        f"📋 *Task Confirmation Required* — {_priority_label(candidate.priority)}\n"
-        f"*{candidate.title}*\n\n"
-        f"{candidate.description[:300]}\n\n"
-        f"Do you want to create this task?"
-    ).strip()
+    """P2 confirmation message with full context."""
+    lines = [
+        f"❓ *Task Confirmation Required* — {_pri(candidate.priority)}",
+        f"",
+        f"📌 *{candidate.title}*",
+        f"",
+    ]
+    if candidate.description:
+        lines.append(candidate.description[:800])
+        lines.append("")
+    lines.append("*Do you want to create this task?*")
+    return "\n".join(lines).strip()
 
 
 def build_confirmation_buttons(task_id: str) -> list[list[InlineButton]]:
-    """Single row with Confirm and Decline buttons."""
     confirm_data, decline_data = confirmation_callback_data(task_id)
     return [[
-        InlineButton(text="✅ Confirm", callback_data=confirm_data),
-        InlineButton(text="❌ Decline", callback_data=decline_data),
+        InlineButton(text="✅ Yes, create task", callback_data=confirm_data),
+        InlineButton(text="❌ No, skip",         callback_data=decline_data),
     ]]
 
 
-def build_summary_message(candidate: TaskCandidate) -> str:
-    """Template for summary-only (non-actionable) emails."""
-    return (
-        f"ℹ️ *Summary* — {candidate.title}\n\n"
-        f"{candidate.description[:300]}"
-    ).strip()
-
-
-def build_review_message(candidate: TaskCandidate) -> str:
-    """Template when classification needs human review."""
-    return (
-        f"⚠️ *Needs Review* — {candidate.title}\n\n"
-        f"Classification was uncertain. Please review manually."
-    ).strip()
-
-
-def build_clarify_deadline_message(candidate: TaskCandidate) -> str:
-    """Template when the deadline must be clarified before a task is created."""
-    return (
-        f"🗓️ *Deadline Clarification Needed* — {candidate.title}\n\n"
-        f"{candidate.evidence}\n\n"
-        f"Please clarify the deadline before a task can be created."
-    ).strip()
-
-
 # ---------------------------------------------------------------------------
-# Dispatch
+# Dispatch — individual per-task notification
 # ---------------------------------------------------------------------------
 
 def notify(
     result: OrchestrationResult,
     transport: NotificationTransport,
 ) -> bool:
-    """Send the appropriate notification for an OrchestrationResult.
+    """Send an individual task notification for a committed result.
 
-    Parameters
-    ----------
-    result:
-        The result of ``process_email()``.
-    transport:
-        A NotificationTransport (MockTransport in tests, TelegramTransport
-        in production).
-
-    Returns
-    -------
-    bool
-        True if the message was sent successfully, False otherwise.
-
-    Notes
-    -----
-    - If ``result.notify`` is False, no message is sent and False is
-      returned.  Callers must not pre-filter — this function is the gate.
-    - P2 confirmation requests include inline buttons with the task_id.
-    - Notifications are never sent for non-committed results.
+    Only fires when result.notify is True (task successfully written to DB).
     """
     if not result.notify:
-        log.debug("notifier: notify=False for email_id=%s, skipping",
-                  result.email_id)
         return False
 
     candidate = result.candidate
     if candidate is None:
-        log.warning("notifier: notify=True but no candidate for email_id=%s",
+        log.warning("notifier: notify=True but no candidate email_id=%s",
                     result.email_id)
         return False
 
     if result.status == TASK_CREATED:
         text = build_task_created_message(candidate)
         ok = transport.send_message(text)
-        log.info("notifier: task_created notification sent=%s email_id=%s",
-                 ok, result.email_id)
+        log.info("notifier: task_created sent=%s email_id=%s", ok, result.email_id)
         return ok
 
     if result.status == AWAITING_CONFIRMATION:
         if not result.task_id:
-            log.warning("notifier: AWAITING_CONFIRMATION but no task_id "
-                        "email_id=%s", result.email_id)
+            log.warning("notifier: AWAITING_CONFIRMATION no task_id email_id=%s",
+                        result.email_id)
             return False
         text = build_confirmation_request_message(candidate)
         buttons = build_confirmation_buttons(result.task_id)
@@ -178,7 +212,6 @@ def notify(
                  ok, result.email_id, result.task_id)
         return ok
 
-    # result.notify should not be True for other statuses, but guard anyway.
-    log.warning("notifier: unexpected notify=True for status=%s email_id=%s",
+    log.warning("notifier: unexpected notify=True status=%s email_id=%s",
                 result.status, result.email_id)
     return False

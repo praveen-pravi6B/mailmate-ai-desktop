@@ -173,26 +173,30 @@ class TestTaskCreation(unittest.TestCase):
         store = make_store()
         return process_email(email, agent, store, dry_run=False), store
 
-    def test_p1_clear_deadline_creates_task(self):
+    def test_p1_clear_deadline_asks_confirmation(self):
         result, _ = self._run(priority="P1")
-        self.assertEqual(result.status, TASK_CREATED)
+        self.assertEqual(result.status, AWAITING_CONFIRMATION)
 
     def test_p0_clear_deadline_creates_task(self):
         result, _ = self._run(priority="P0")
         self.assertEqual(result.status, TASK_CREATED)
 
+    def test_p0_no_deadline_still_creates_task(self):
+        result, _ = self._run(priority="P0", body="Server is down.")
+        self.assertEqual(result.status, TASK_CREATED)
+
     def test_task_created_notify_is_true(self):
-        result, _ = self._run()
+        result, _ = self._run(priority="P0")
         self.assertTrue(result.notify)
 
     def test_task_created_task_id_set(self):
-        result, _ = self._run()
+        result, _ = self._run(priority="P0")
         self.assertIsNotNone(result.task_id)
 
     def test_store_create_task_called_with_correct_priority(self):
-        _, store = self._run(priority="P1")
+        _, store = self._run(priority="P0")
         call_kwargs = store.create_task.call_args.kwargs
-        self.assertEqual(call_kwargs["priority"], "P1")
+        self.assertEqual(call_kwargs["priority"], "P0")
 
     def test_store_create_task_called_with_correct_email_id(self):
         email = make_email(message_id="email-xyz", body="Due 2026-10-20.")
@@ -207,10 +211,9 @@ class TestTaskCreation(unittest.TestCase):
         self.assertEqual(result.status, NO_ACTION)
         store.create_task.assert_not_called()
 
-    def test_p0_ambiguous_deadline_is_no_action(self):
+    def test_p0_ambiguous_deadline_still_creates_task(self):
         result, store = self._run(priority="P0", body="Fix this ASAP.")
-        self.assertEqual(result.status, NO_ACTION)
-        store.create_task.assert_not_called()
+        self.assertEqual(result.status, TASK_CREATED)
 
 
 # ---------------------------------------------------------------------------
@@ -219,22 +222,22 @@ class TestTaskCreation(unittest.TestCase):
 
 class TestP2Confirmation(unittest.TestCase):
 
-    def test_p2_returns_awaiting_confirmation(self):
-        email = make_email(body="Review this document when you have time.")
+    def test_p2_clear_deadline_returns_awaiting_confirmation(self):
+        email = make_email(body="Review this document by 2026-10-25.")
         agent = make_laya_agent("YES", "P2")
         store = make_store()
         result = process_email(email, agent, store, dry_run=False)
         self.assertEqual(result.status, AWAITING_CONFIRMATION)
 
-    def test_p2_notify_is_true(self):
-        email = make_email(body="Review this when you have time.")
+    def test_p2_clear_deadline_notify_is_true(self):
+        email = make_email(body="Review this by 2026-10-25.")
         agent = make_laya_agent("YES", "P2")
         store = make_store()
         result = process_email(email, agent, store, dry_run=False)
         self.assertTrue(result.notify)
 
     def test_p2_task_created_with_pending_confirmation(self):
-        email = make_email(body="Review this document.")
+        email = make_email(body="Review this document by 2026-10-25.")
         agent = make_laya_agent("YES", "P2")
         store = make_store()
         process_email(email, agent, store, dry_run=False)
@@ -242,7 +245,7 @@ class TestP2Confirmation(unittest.TestCase):
         self.assertEqual(call_kwargs["confirmation_status"],
                          ConfirmationStatus.PENDING)
 
-    def test_p2_ambiguous_deadline_is_no_action(self):
+    def test_p2_no_deadline_is_no_action(self):
         email = make_email(body="Review this ASAP.")
         agent = make_laya_agent("YES", "P2")
         store = make_store()
