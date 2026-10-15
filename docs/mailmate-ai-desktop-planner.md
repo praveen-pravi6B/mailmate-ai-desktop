@@ -203,7 +203,7 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Verify the active evaluator prompts and rerun evaluation. Last recorded run: overall 6/8 (75%), actionability 7/8 (87.5%), priority 5/6 (83.3%). See "Evaluation history" section for details.
 - [x] Resolve absent deadline vs ambiguous deadline policy. `DeadlineState` enum added; `decide()` updated; 14 tests pass.
 - [x] Add/update README with setup, architecture, commands, and safety boundaries. README.md added.
-- [ ] Ensure virtualenv, local databases, tokens, and secrets are gitignored.
+- [x] Ensure virtualenv, local databases, tokens, and secrets are gitignored. .gitignore covers .venv/, *.db/*.sqlite, .env, token.json, credentials.json, client_secret*.json.
 
 ### Milestone 1 — Reliable policy
 - [x] Define P0/P1/P2/OTHER/REVIEW behavior.
