@@ -272,14 +272,14 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Test with a mock transport first. `MockTransport` in `app/integrations/telegram.py`; all 45 new tests (notifier + handler) use it. 212 total tests passing.
 
 ### Milestone 7 — Google Calendar
-- [ ] Implement explicit calendar eligibility checks.
-- [ ] Keep task and calendar operations separate.
-- [ ] Never schedule ambiguous deadlines.
-- [ ] Do not invent times for date-only deadlines.
-- [ ] Ask for missing time/timezone when needed.
-- [ ] Persist event IDs and prevent duplicate events.
-- [ ] Mock Calendar calls before real integration.
-- [ ] Require approval before enabling real calendar writes.
+- [x] Implement explicit calendar eligibility checks. `check_eligibility()` in `app/services/calendar_service.py` — 6 conditions tested before any API call.
+- [x] Keep task and calendar operations separate. `schedule_event()` is a distinct call; task creation never triggers it automatically.
+- [x] Never schedule ambiguous deadlines. AMBIGUOUS and NONE deadline_state → INELIGIBLE; tests confirm no event created.
+- [x] Do not invent times for date-only deadlines. `time` and `timezone` are required parameters; missing → MISSING_TIME / MISSING_TIMEZONE status.
+- [x] Ask for missing time/timezone when needed. Explicit status codes returned; caller responsible for prompting user.
+- [x] Persist event IDs and prevent duplicate events. `store.set_calendar_event_id()` called only after transport confirms; existing event_id → DUPLICATE.
+- [x] Mock Calendar calls before real integration. `MockCalendarTransport` in `app/integrations/calendar.py`; all 33 tests use it.
+- [x] Require approval before enabling real calendar writes. `GoogleCalendarTransport` raises `ValueError` unless `live_writes=True` is passed explicitly. 245 total tests passing.
 
 ### Milestone 8 — Gmail
 - [ ] Inspect reference MailMate code for suitable patterns.
