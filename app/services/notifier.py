@@ -14,6 +14,7 @@ Safety rules
 """
 
 import logging
+import re
 from typing import Optional
 
 from app.integrations.telegram import InlineButton, NotificationTransport
@@ -83,15 +84,16 @@ def send_poll_summary(
             line += f"\n  {pri}"
         if dl:
             line += f"  |  📅 {dl}"
+        if r.summary:
+            line += f"\n  _{r.summary}_"
 
         if r.status == TASK_CREATED:
-            important.append(line + "\n  _Task created ✅_")
+            important.append(line + "\n  Task created ✅")
         elif r.status == AWAITING_CONFIRMATION:
-            important.append(line + "\n  _Awaiting your confirmation ❓_")
+            important.append(line + "\n  Awaiting your confirmation ❓")
         elif r.status == NEEDS_REVIEW:
             reviews.append(line)
         else:
-            # All NO_ACTION emails go to Updates regardless of priority
             updates.append(line)
 
     msg = "📬 *MailMate AI — Email Summary*\n\n"
@@ -131,7 +133,7 @@ def send_poll_summary(
 # Individual task messages
 # ---------------------------------------------------------------------------
 
-def build_task_created_message(candidate: TaskCandidate) -> str:
+def build_task_created_message(candidate: TaskCandidate, summary: str = "") -> str:
     """Detailed message for P0/P1 task created."""
     lines = [
         f"✅ *Task Created* — {_pri(candidate.priority)}",
@@ -139,30 +141,27 @@ def build_task_created_message(candidate: TaskCandidate) -> str:
         f"📌 *{candidate.title}*",
         f"",
     ]
-    if candidate.description:
-        # Full description, split into readable lines, max 800 chars
-        desc = candidate.description[:800]
-        lines.append(desc)
+    if summary:
+        lines.append(f"📝 {summary}")
         lines.append("")
     if candidate.deadline:
         lines.append(f"📅 *Deadline:* {candidate.deadline}")
-    else:
-        lines.append(f"📅 *Deadline:* Not specified ({candidate.deadline_state})")
-    if candidate.evidence and candidate.evidence != "No date or time reference found.":
-        lines.append(f"🔍 *Evidence:* _{candidate.evidence}_")
     return "\n".join(lines).strip()
 
 
-def build_confirmation_request_message(candidate: TaskCandidate) -> str:
-    """P2 confirmation message with full context."""
+def build_confirmation_request_message(candidate: TaskCandidate, summary: str = "") -> str:
+    """P2 confirmation message with AI summary."""
     lines = [
         f"❓ *Task Confirmation Required* — {_pri(candidate.priority)}",
         f"",
         f"📌 *{candidate.title}*",
         f"",
     ]
-    if candidate.description:
-        lines.append(candidate.description[:800])
+    if summary:
+        lines.append(f"📝 {summary}")
+        lines.append("")
+    if candidate.deadline:
+        lines.append(f"📅 *Deadline:* {candidate.deadline}")
         lines.append("")
     lines.append("*Do you want to create this task?*")
     return "\n".join(lines).strip()
@@ -198,7 +197,7 @@ def notify(
         return False
 
     if result.status == TASK_CREATED:
-        text = build_task_created_message(candidate)
+        text = build_task_created_message(candidate, result.summary)
         ok = transport.send_message(text)
         log.info("notifier: task_created sent=%s email_id=%s", ok, result.email_id)
         return ok
@@ -208,7 +207,7 @@ def notify(
             log.warning("notifier: AWAITING_CONFIRMATION no task_id email_id=%s",
                         result.email_id)
             return False
-        text = build_confirmation_request_message(candidate)
+        text = build_confirmation_request_message(candidate, result.summary)
         buttons = build_confirmation_buttons(result.task_id)
         ok = transport.send_message(text, buttons=buttons)
         log.info("notifier: confirmation_request sent=%s email_id=%s task_id=%s",

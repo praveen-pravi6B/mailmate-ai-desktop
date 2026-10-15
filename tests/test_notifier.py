@@ -88,14 +88,13 @@ class TestTaskCreatedMessage(unittest.TestCase):
         msg = build_task_created_message(make_candidate(deadline="2026-10-20"))
         self.assertIn("2026-10-20", msg)
 
-    def test_no_deadline_shows_deadline_state(self):
+    def test_no_deadline_message_has_title(self):
         msg = build_task_created_message(make_candidate(deadline=None))
-        # Should mention deadline state when no date is available
-        self.assertTrue("Deadline" in msg or "deadline" in msg or "NONE" in msg or "CLEAR" in msg)
+        self.assertIn("Fix login bug", msg)
 
-    def test_description_included(self):
-        msg = build_task_created_message(make_candidate(description="Fix urgently."))
-        self.assertIn("Fix urgently.", msg)
+    def test_summary_included_when_provided(self):
+        msg = build_task_created_message(make_candidate(), summary="Invoice due by end of month.")
+        self.assertIn("Invoice due by end of month.", msg)
 
     def test_description_truncated_at_300(self):
         long_desc = "A" * 400

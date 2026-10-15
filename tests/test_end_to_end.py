@@ -1,5 +1,14 @@
 """End-to-end integration tests for MailMate AI — Milestone 10.
 
+# Patch summarizer so no HTTP calls are made during tests
+from unittest.mock import patch as _patch
+_summarizer_patch = _patch(
+    "app.services.orchestrator.summarize_email",
+    return_value="Test email summary."
+)
+_summarizer_patch.start()
+
+
 These tests exercise the full pipeline (Gmail → normalise → classify →
 policy → store → notify → confirm) using mocks for Laya, Telegram, and
 Gmail.  No real external API calls are made.

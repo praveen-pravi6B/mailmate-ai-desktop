@@ -1,11 +1,18 @@
 """Tests for app/services/orchestrator.py.
 
-The Laya agent and TaskStore are mocked throughout.  No model is loaded
-and no real database is written.
+The Laya agent, TaskStore, and summarizer are mocked throughout.
+No model is loaded, no real database is written, no HTTP calls made.
 """
 
 import unittest
 from unittest.mock import MagicMock, patch
+
+# Patch summarizer globally so no HTTP calls are made during tests
+_summarizer_patch = patch(
+    "app.services.orchestrator.summarize_email",
+    return_value="Test email summary."
+)
+_summarizer_patch.start()
 
 from app.models.email import NormalizedEmail
 from app.services.orchestrator import (

@@ -24,6 +24,7 @@ from app.models.email import NormalizedEmail
 from app.models.task import TaskCandidate
 from app.policy.decision_policy import PolicyDecision, PermittedAction
 from app.services.classification_pipeline import apply_policy
+from app.services.summarizer import summarize_email
 from app.services.task_extractor import detect_deadline_state, extract_task
 from app.storage.task_store import (
     ConfirmationStatus,
@@ -77,6 +78,7 @@ class OrchestrationResult:
     task_id: Optional[str] = None
     notify: bool = False
     reason: str = ""
+    summary: str = ""  # AI-generated email summary (1-2 sentences)
 
 
 # ---------------------------------------------------------------------------
@@ -134,12 +136,18 @@ def process_email(
         )
 
     # ------------------------------------------------------------------
-    # 2. Detect deadline state from body (structural, no model call)
+    # 2. Generate summary (LLM — no policy side effects)
+    # ------------------------------------------------------------------
+    summary = summarize_email(email.subject, email.body)
+    log.info("orchestrator: summary generated email_id=%s chars=%d", eid, len(summary))
+
+    # ------------------------------------------------------------------
+    # 3. Detect deadline state from body (structural, no model call)
     # ------------------------------------------------------------------
     deadline_state = detect_deadline_state(email.body)
 
     # ------------------------------------------------------------------
-    # 3. Classify with Laya
+    # 4. Classify with Laya
     # ------------------------------------------------------------------
     try:
         classification: ClassificationResult = classify_email(
@@ -164,7 +172,7 @@ def process_email(
     )
 
     # ------------------------------------------------------------------
-    # 4. Apply policy (firewall — no side effects)
+    # 5. Apply policy (firewall — no side effects)
     # ------------------------------------------------------------------
     decision: PolicyDecision = apply_policy(classification)
 
@@ -172,12 +180,12 @@ def process_email(
              eid, decision.action.value)
 
     # ------------------------------------------------------------------
-    # 5. Extract task candidate (structural)
+    # 6. Extract task candidate (structural)
     # ------------------------------------------------------------------
     candidate: TaskCandidate = extract_task(email, classification)
 
     # ------------------------------------------------------------------
-    # 6. Dry-run short-circuit
+    # 7. Dry-run short-circuit
     # ------------------------------------------------------------------
     if dry_run:
         return OrchestrationResult(
@@ -187,10 +195,11 @@ def process_email(
             candidate=candidate,
             notify=False,
             reason="Dry-run mode: no database writes performed.",
+            summary=summary,
         )
 
     # ------------------------------------------------------------------
-    # 7. Act on policy decision
+    # 8. Act on policy decision
     # ------------------------------------------------------------------
     action = decision.action
 
@@ -228,8 +237,9 @@ def process_email(
             decision=decision,
             candidate=candidate,
             task_id=task.id,
-            notify=True,   # caller must send notification after seeing notify=True
+            notify=True,
             reason=f"Task created: {candidate.priority} — {candidate.title[:60]}",
+            summary=summary,
         )
 
     if action == PermittedAction.ASK_CONFIRMATION:
@@ -248,6 +258,7 @@ def process_email(
             return OrchestrationResult(
                 status=SKIPPED, email_id=eid, decision=decision, candidate=candidate,
                 reason="Duplicate detected during insert; treated as already processed.",
+                summary=summary,
             )
         except Exception as exc:
             log.error("orchestrator: P2 task creation failed email_id=%s err=%s",
@@ -255,9 +266,10 @@ def process_email(
             return OrchestrationResult(
                 status=ERROR, email_id=eid, decision=decision, candidate=candidate,
                 reason=f"P2 task creation failed: {type(exc).__name__}",
+                summary=summary,
             )
 
-        log.info("orchestrator: P2 task awaiting confirmation email_id=%s task_id=%s",
+        log.info("orchestrator: task awaiting confirmation email_id=%s task_id=%s",
                  eid, task.id)
         return OrchestrationResult(
             status=AWAITING_CONFIRMATION,
@@ -265,8 +277,9 @@ def process_email(
             decision=decision,
             candidate=candidate,
             task_id=task.id,
-            notify=True,   # caller sends a confirmation-request notification
-            reason=f"P2 task pending confirmation: {candidate.title[:60]}",
+            notify=True,
+            reason=f"Task pending confirmation: {candidate.title[:60]}",
+            summary=summary,
         )
 
     if action == PermittedAction.CLARIFY_DEADLINE:
@@ -276,6 +289,7 @@ def process_email(
             decision=decision,
             candidate=candidate,
             reason=f"Deadline clarification needed: {candidate.evidence}",
+            summary=summary,
         )
 
     if action == PermittedAction.SUMMARIZE_ONLY:
@@ -285,6 +299,7 @@ def process_email(
             decision=decision,
             candidate=candidate,
             reason="Summary only; no task required.",
+            summary=summary,
         )
 
     # REVIEW_CLASSIFICATION or unmatched
@@ -294,4 +309,5 @@ def process_email(
         decision=decision,
         candidate=candidate,
         reason="Classification requires human review; no automated action taken.",
+        summary=summary,
     )
