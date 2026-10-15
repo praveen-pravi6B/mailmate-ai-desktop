@@ -7,3 +7,8 @@ __pycache__/
 .env
 *.log
 .serena/
+
+# Google OAuth credentials and tokens — never commit these
+token.json
+credentials.json
+client_secret*.json

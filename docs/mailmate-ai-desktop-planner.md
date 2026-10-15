@@ -282,14 +282,14 @@ Status key: `[x]` verified complete, `[~]` drafted or provided but needs verific
 - [x] Require approval before enabling real calendar writes. `GoogleCalendarTransport` raises `ValueError` unless `live_writes=True` is passed explicitly. 245 total tests passing.
 
 ### Milestone 8 — Gmail
-- [ ] Inspect reference MailMate code for suitable patterns.
-- [ ] Document authentication and minimum required scopes.
-- [ ] Begin read-only.
-- [ ] Fetch a small controlled set of messages and normalize them.
-- [ ] Prevent repeated processing.
-- [ ] Handle pagination, limits, token refresh, deletions, and failures.
-- [ ] Keep tokens and credentials out of Git/logs.
-- [ ] Use controlled test messages before enabling automation.
+- [x] Inspect reference MailMate code for suitable patterns. Reused MIME parsing, OAuth flow, HTML→text, and idempotency patterns from PI version.
+- [x] Document authentication and minimum required scopes. `gmail.readonly` only; `load_credentials()` in `app/integrations/gmail.py`; token/credential paths from env vars.
+- [x] Begin read-only. `GmailClient` uses `gmail.readonly` scope; never sends, labels, or deletes.
+- [x] Fetch a small controlled set of messages and normalize them. `fetch_new_emails(transport, store, max_results=10)` in `app/services/gmail_poller.py` yields `NormalizedEmail` objects.
+- [x] Prevent repeated processing. `store.email_has_task(msg_id)` pre-filter before fetching full content; already-processed IDs are skipped entirely.
+- [x] Handle pagination, limits, token refresh, deletions, and failures. `max_results` enforced; token auto-refresh in `load_credentials()`; deleted messages (None return) skipped gracefully; transport errors logged and skipped.
+- [x] Keep tokens and credentials out of Git/logs. Paths via env vars only; no token values in log messages; `token.json` / `credentials.json` in `.gitignore`.
+- [x] Use controlled test messages before enabling automation. All 31 Gmail tests use `MockGmailTransport`; `GmailClient` requires real credentials to instantiate. 276 total tests passing.
 
 ### Milestone 9 — Desktop experience and operations
 - [ ] Decide interface approach after inspecting the reference project.
