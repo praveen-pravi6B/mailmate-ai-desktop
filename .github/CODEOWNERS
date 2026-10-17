@@ -1,0 +1,22 @@
+# CODEOWNERS — assigns review responsibility for parts of the codebase.
+# Each pattern is followed by one or more GitHub usernames or team names.
+# The last matching pattern takes precedence.
+
+# Default owner for everything
+* @praveen-pravi6B
+
+# Core policy — highest sensitivity, owner must review
+app/policy/ @praveen-pravi6B
+
+# AI models and classification
+app/laya_engine/ @praveen-pravi6B
+
+# Integrations (Gmail, Telegram, Calendar) — credentials-adjacent
+app/integrations/ @praveen-pravi6B
+
+# Storage layer
+app/storage/ @praveen-pravi6B
+
+# Documentation
+docs/ @praveen-pravi6B
+README.md @praveen-pravi6B
